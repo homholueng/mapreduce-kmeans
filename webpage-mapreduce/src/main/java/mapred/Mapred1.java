@@ -91,6 +91,9 @@ public class Mapred1 {
 
         Scan scan = new Scan();
         scan.addFamily(Bytes.toBytes(CONTENT_FAMILY));
+        scan.setCaching(500);
+        scan.setCacheBlocks(false);
+
 
         TableMapReduceUtil.initTableMapperJob(
                 "news-7",
