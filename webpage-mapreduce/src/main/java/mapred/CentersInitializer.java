@@ -1,9 +1,12 @@
 package mapred;
 
+import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.fs.FileSystem;
 
 import java.io.*;
 import java.util.*;
@@ -17,7 +20,6 @@ import java.util.*;
 public class CentersInitializer {
 
     public static final String K = "K";
-    public static final String DOC_ID_FILE_PATH = "docIDFilePath";
 
     public static class MyMapper extends Mapper<Text, Text, Text, Text> {
 
@@ -37,12 +39,9 @@ public class CentersInitializer {
         protected void setup(Context context) throws IOException, InterruptedException {
             Configuration conf = context.getConfiguration();
             int k = Integer.parseInt(conf.get(K));
-            String docIDFilePath = conf.get(DOC_ID_FILE_PATH);
-            if (context.getCacheFiles() != null && context.getCacheFiles().length > 0) {
-                File docIDFile = new File(docIDFilePath);
-                fetchFile2Set(docIDFile);
-                initialCenters(k);
-            }
+            String docIDFilePath = conf.get(Constants.IDS_FILE_PATH_NAME);
+            fetchFile2Set(docIDFilePath, context);
+            initialCenters(k);
             super.setup(context);
         }
 
@@ -60,12 +59,14 @@ public class CentersInitializer {
 
         /**
          * 把DistributedCache文件的网页ID取出到集合中
-         * @param docIDFile
+         * @param docIDFilePath
+         * @param context
          * @throws IOException
          */
-        private void fetchFile2Set(File docIDFile) throws IOException {
-            FileInputStream fis = new FileInputStream(docIDFile);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
+        private void fetchFile2Set(String docIDFilePath, Context context) throws IOException {
+            FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+            Path path = new Path(docIDFilePath);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(path)));
             String docID;
             while ((docID = reader.readLine()) != null) {
                 docIDSet.add(docID);
@@ -89,5 +90,9 @@ public class CentersInitializer {
                 context.write(key, value);
             }
         }
+    }
+
+    public static void main(String[] args) {
+
     }
 }
