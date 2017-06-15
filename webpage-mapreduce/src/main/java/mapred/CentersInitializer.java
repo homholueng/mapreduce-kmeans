@@ -3,6 +3,7 @@ package mapred;
 import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -75,8 +76,12 @@ public class CentersInitializer {
 
         @Override
         protected void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-            if (centers.containsKey(key)) {
-                centerID.set(centers.get(key));
+            System.out.println("key: " + key.toString() + ", value: " + value.toString());
+            if (centers.containsKey(key.toString())) {
+                centerID.set(centers.get(key.toString()));
+                context.write(centerID, value);
+            } else {
+                centerID.set("Yuan");
                 context.write(centerID, value);
             }
         }
@@ -92,7 +97,4 @@ public class CentersInitializer {
         }
     }
 
-    public static void main(String[] args) {
-
-    }
 }

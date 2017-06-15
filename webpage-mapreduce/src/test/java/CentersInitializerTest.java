@@ -1,3 +1,4 @@
+import mapred.CentersInitializer;
 import mapred.KmeansDriver;
 import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
@@ -8,6 +9,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -53,13 +55,38 @@ public class CentersInitializerTest {
         job.setReducerClass(MyReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        TextInputFormat.addInputPath(job, new Path("/cit/01"));
+        TextInputFormat.addInputPath(job, new Path("/cit/input/01"));
         TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
 
         job.waitForCompletion(true);
     }
 
+
+    public static void test() throws IOException, ClassNotFoundException, InterruptedException {
+        Configuration conf = HBaseConfiguration.create();
+        KmeansDriver.initProcessCache(conf);
+
+        conf.set(CentersInitializer.K, "2");
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(CentersInitializer.class);
+        job.setMapperClass(CentersInitializer.MyMapper.class);
+        job.setReducerClass(CentersInitializer.MyReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+//        FileInputFormat.addInputPath(job, new Path("/cit/input/doc"));
+//        FileOutputFormat.setOutputPath(job, new Path("/cit/output"));
+//        TextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
+//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        KeyValueTextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
+        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        job.setInputFormatClass(KeyValueTextInputFormat.class);
+
+
+        job.waitForCompletion(true);
+    }
+
     public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
-        creatTestData();
+//        creatTestData();
+        test();
     }
 }
