@@ -9,12 +9,15 @@ import java.io.*;
 import java.util.*;
 
 /**
+ * 用于初始化簇心，需要在 Configuration 设置 K 和 docIDFilePath
+ * K: 指定有几个簇
+ * docIDFilePath: 用于存放所有网页ID的DistributedCache文件路径
  * Created by yuan on 17-6-15.
  */
 public class CentersInitializer {
 
     public static final String K = "K";
-    public static final String DOC_ID_FILE_PATH = "";
+    public static final String DOC_ID_FILE_PATH = "docIDFilePath";
 
     public static class MyMapper extends Mapper<Text, Text, Text, Text> {
 
