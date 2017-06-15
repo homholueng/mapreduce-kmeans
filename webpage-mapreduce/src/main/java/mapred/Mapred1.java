@@ -21,6 +21,7 @@ import java.io.StringReader;
 import static hbase.config.TableConfig.CONTENT_FAMILY;
 import static hbase.config.TableConfig.CONTENT_QUALIFIER;
 import static mapred.conf.Constants.SEPERATOR;
+import static org.apache.avro.generic.GenericData.StringType.String;
 
 /**
  * Created by HL on 14/06/2017.
