@@ -1,27 +1,25 @@
 package mapred;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.lionsoul.jcseg.tokenizer.core.*;
+import org.lionsoul.jcseg.tokenizer.core.IWord;
+import util.SegmentorFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
+import java.io.InputStreamReader;
 
 import static hbase.config.TableConfig.CONTENT_FAMILY;
 import static hbase.config.TableConfig.CONTENT_QUALIFIER;
-import static mapred.conf.Constants.SEPERATOR;
-import static org.apache.avro.generic.GenericData.StringType.String;
+import static mapred.config.Constants.SEPERATOR;
+import static util.SegmentorFactory.Segmentor;
 
 /**
  * Created by HL on 14/06/2017.
@@ -30,21 +28,16 @@ public class Mapred1 {
 
     public static class MapClass extends TableMapper<Text, IntWritable> {
 
-        ISegment seg;
+        Segmentor seg;
 
-        public MapClass() {
-            JcsegTaskConfig config = new JcsegTaskConfig(true);
-            config.setClearStopwords(true);
-            config.setAppendCJKSyn(false);
-
-            ADictionary dic = DictionaryFactory.createSingletonDictionary(config);
-            try {
-                this.seg = SegmentFactory.createJcseg(
-                        JcsegTaskConfig.COMPLEX_MODE,
-                        new Object[]{config, dic}
-                );
-            } catch (JcsegException e) {
-                e.printStackTrace();
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            this.seg = SegmentorFactory.newInstance();
+            FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(new Path("hdfs://HACluster/tmp/ids.txt"))));
+            String id = "";
+            while ((id = reader.readLine()) != null) {
+                System.out.println(id);
             }
         }
 
@@ -56,18 +49,15 @@ public class Mapred1 {
             byte[] bytes = value.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
             String content = new String(bytes);
 
-            seg.reset(new StringReader(content));
+            seg.reset(content);
             IWord word = null;
             while ((word = seg.next()) != null) {
-                int t = word.getType();
-                if (t == 1 || t == 2 || t == 5) {
-                    String val = word.getValue();
-                    StringBuilder keyBuilder = new StringBuilder(val.length() + SEPERATOR.length() + id.length());
-                    Text keyout = new Text(keyBuilder.append(val).append(SEPERATOR).append(id).toString());
-                    System.out.println(keyout + ": " + val);
-                    context.write(keyout,
-                            new IntWritable(1));
-                }
+                String val = word.getValue();
+                StringBuilder keyBuilder = new StringBuilder(val.length() + SEPERATOR.length() + id.length());
+                Text keyout = new Text(keyBuilder.append(val).append(SEPERATOR).append(id).toString());
+//                System.out.println(keyout + ": " + val);
+                context.write(keyout,
+                        new IntWritable(1));
             }
         }
     }
@@ -84,29 +74,4 @@ public class Mapred1 {
             context.write(key, new IntWritable(count));
         }
     }
-
-    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        Configuration conf = HBaseConfiguration.create();
-        Job job = Job.getInstance(conf);
-        job.setJarByClass(Mapred1.class);
-
-        Scan scan = new Scan();
-        scan.addFamily(Bytes.toBytes(CONTENT_FAMILY));
-        scan.setCaching(500);
-        scan.setCacheBlocks(false);
-
-
-        TableMapReduceUtil.initTableMapperJob(
-                "news-7",
-                scan,
-                MapClass.class,
-                Text.class,
-                IntWritable.class,
-                job
-        );
-
-        job.setOutputFormatClass(NullOutputFormat.class);
-        job.waitForCompletion(true);
-    }
-
 }

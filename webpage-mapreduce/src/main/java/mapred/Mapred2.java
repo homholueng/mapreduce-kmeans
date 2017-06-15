@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static mapred.conf.Constants.SEPERATOR;
+import static mapred.config.Constants.SEPERATOR;
 
 /**
  * Created by HL on 14/06/2017.
