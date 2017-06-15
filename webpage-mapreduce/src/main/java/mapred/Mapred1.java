@@ -1,5 +1,6 @@
 package mapred;
 
+import mapred.config.Constants;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Result;
@@ -34,7 +35,8 @@ public class Mapred1 {
         protected void setup(Context context) throws IOException, InterruptedException {
             this.seg = SegmentorFactory.newInstance();
             FileSystem fileSystem = FileSystem.get(context.getConfiguration());
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(new Path("hdfs://HACluster/tmp/ids.txt"))));
+            Path path = new Path(context.getConfiguration().get(Constants.IDS_FILE_PATH_NAME));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(path)));
             String id = "";
             while ((id = reader.readLine()) != null) {
                 System.out.println(id);
