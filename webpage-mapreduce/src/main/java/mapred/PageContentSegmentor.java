@@ -1,15 +1,23 @@
 package mapred;
 
+import hbase.config.TableConfig;
 import mapred.config.Constants;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.lionsoul.jcseg.tokenizer.core.IWord;
 import util.SegmentorFactory;
 
@@ -25,7 +33,7 @@ import static util.SegmentorFactory.Segmentor;
 /**
  * Created by HL on 14/06/2017.
  */
-public class Mapred1 {
+public class PageContentSegmentor {
 
     public static class MapClass extends TableMapper<Text, IntWritable> {
 
@@ -34,13 +42,13 @@ public class Mapred1 {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             this.seg = SegmentorFactory.newInstance();
-            FileSystem fileSystem = FileSystem.get(context.getConfiguration());
-            Path path = new Path(context.getConfiguration().get(Constants.IDS_FILE_PATH_NAME));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(path)));
-            String id = "";
-            while ((id = reader.readLine()) != null) {
-                System.out.println(id);
-            }
+//            FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+//            Path path = new Path(context.getConfiguration().get(Constants.IDS_FILE_PATH_NAME));
+//            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(path)));
+//            String id = "";
+//            while ((id = reader.readLine()) != null) {
+//                System.out.println(id);
+//            }
         }
 
         // input: 网页编号->网页内容
@@ -48,6 +56,7 @@ public class Mapred1 {
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
             String id = key.toString();
+            id = id.replaceAll(" ", "");
             byte[] bytes = value.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
             String content = new String(bytes);
 
@@ -75,5 +84,37 @@ public class Mapred1 {
             }
             context.write(key, new IntWritable(count));
         }
+    }
+
+    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+        Configuration configuration = HBaseConfiguration.create();
+//        configuration.set("mapred.textoutputformat.separator", "\t");
+
+        Job job = Job.getInstance(configuration);
+        job.setMapperClass(PageContentSegmentor.MapClass.class);
+        job.setReducerClass(PageContentSegmentor.Reduce.class);
+
+        Scan scan = new Scan();
+        scan.addFamily(Bytes.toBytes(CONTENT_FAMILY));
+        scan.setCaching(500);
+        scan.setCacheBlocks(false);
+
+        Path out = new Path("mapred1_output_test");
+        FileSystem.get(configuration).delete(out, true);
+        SequenceFileOutputFormat.setOutputPath(job, out);
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        TableMapReduceUtil.initTableMapperJob(
+                TableConfig.NEWS_TABLE_NAME,
+                scan,
+                PageContentSegmentor.MapClass.class,
+                Text.class,
+                IntWritable.class,
+                job
+        );
+
+        job.waitForCompletion(true);
     }
 }

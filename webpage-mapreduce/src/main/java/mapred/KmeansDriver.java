@@ -13,14 +13,11 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.lionsoul.jcseg.tokenizer.core.IWord;
 import util.SegmentorFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,7 +51,7 @@ public class KmeansDriver {
         while ((row = scanner.next()) != null) {
             // add id to set
             ImmutableBytesWritable bytesWritable = new ImmutableBytesWritable(row.getRow());
-            ids.add(bytesWritable.toString());
+            ids.add(bytesWritable.toString().replaceAll(" ", ""));
 
             // make segment on content
             byte[] bytes = row.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
@@ -99,24 +96,9 @@ public class KmeansDriver {
         Configuration configuration = HBaseConfiguration.create();
         initProcessCache(configuration);
 
-        Job job = Job.getInstance(configuration);
-        job.setJarByClass(Mapred1.class);
-
         Scan scan = new Scan();
         scan.addFamily(Bytes.toBytes(CONTENT_FAMILY));
         scan.setCaching(500);
         scan.setCacheBlocks(false);
-
-        TableMapReduceUtil.initTableMapperJob(
-                TableConfig.NEWS_TABLE_NAME,
-                scan,
-                Mapred1.MapClass.class,
-                Text.class,
-                IntWritable.class,
-                job
-        );
-
-        job.setOutputFormatClass(NullOutputFormat.class);
-        job.waitForCompletion(true);
     }
 }

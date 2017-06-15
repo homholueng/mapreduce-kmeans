@@ -4,7 +4,7 @@ package mapred.config;
  * Created by HL on 14/06/2017.
  */
 public class Constants {
-    public static final String SEPERATOR = "|";
+    public static final String SEPERATOR = "@";
     public static final String HDFS_PREFIX = "hdfs://HACluster";
 
     public static final String PAGE_COUNT_NAME = "PAGE_COUNT_NAME";
