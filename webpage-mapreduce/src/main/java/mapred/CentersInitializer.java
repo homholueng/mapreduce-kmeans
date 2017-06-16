@@ -81,7 +81,7 @@ public class CentersInitializer {
 
         @Override
         protected void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-            System.out.println("key: " + key.toString() + ", value: " + value.toString());
+//            System.out.println("key: " + key.toString() + ", value: " + value.toString());
             if (centers.containsKey(key.toString())) {
                 centerID.set(centers.get(key.toString()));
                 context.write(centerID, value);

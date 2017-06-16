@@ -18,6 +18,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Random;
 
 /**
  * Created by yuan on 17-6-15.
@@ -27,12 +28,31 @@ public class CentersInitializerTest {
 
     public static class MyMapper extends Mapper<Object, Text, Text, Text> {
         private Text docID;
-        private Text content = new Text("1&2&3&4");
+        private Text content = new Text();
 
         @Override
         protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             docID = value;
+            String vector = createVector();
+            content.set(vector.toString());
             context.write(docID, content);
+        }
+
+        /**
+         * 产生随机向量
+         * @return
+         */
+        private String createVector() {
+            StringBuilder sb = new StringBuilder();
+            double v;
+            v = Math.random();
+            sb.append(v);
+            for (int i = 1; i < 4; i++) {
+                v = Math.random();
+                sb.append("&");
+                sb.append(v);
+            }
+            return sb.toString();
         }
     }
 
