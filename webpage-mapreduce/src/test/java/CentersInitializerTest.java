@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class CentersInitializerTest {
 
     public static class MyMapper extends Mapper<Object, Text, Text, Text> {
         private Text docID;
-        private Text content = new Text("Hello World");
+        private Text content = new Text("1&2&3&4");
 
         @Override
         protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -79,7 +80,9 @@ public class CentersInitializerTest {
 //        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
         KeyValueTextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
         TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+//        SequenceFileOutputFormat.setOutputPath(job, new Path("/cit/output"));
         job.setInputFormatClass(KeyValueTextInputFormat.class);
+//        job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
 
         job.waitForCompletion(true);

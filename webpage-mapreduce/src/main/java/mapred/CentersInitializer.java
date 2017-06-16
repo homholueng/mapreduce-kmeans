@@ -80,9 +80,6 @@ public class CentersInitializer {
             if (centers.containsKey(key.toString())) {
                 centerID.set(centers.get(key.toString()));
                 context.write(centerID, value);
-            } else {
-                centerID.set("Yuan");
-                context.write(centerID, value);
             }
         }
     }
