@@ -79,10 +79,10 @@ public class CentersInitializerTest {
 //        TextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
 //        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
         KeyValueTextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
-        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
-//        SequenceFileOutputFormat.setOutputPath(job, new Path("/cit/output"));
+//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        SequenceFileOutputFormat.setOutputPath(job, new Path("/cit/output"));
         job.setInputFormatClass(KeyValueTextInputFormat.class);
-//        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
 
         job.waitForCompletion(true);
