@@ -3,11 +3,16 @@ package mapred;
 import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.mapreduce.lib.fieldsel.FieldSelectionHelper;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 import java.io.*;
 import java.util.*;
@@ -92,6 +97,47 @@ public class CentersInitializer {
                 context.write(key, value);
             }
         }
+    }
+
+
+    /**
+     * CentersInitializer 启动入口
+     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param outputDir 输出目录
+     * @param k 要聚类的个数
+     * @throws InterruptedException
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    public static void start(String vectorFilePath, String outputDir, int k) throws InterruptedException, IOException, ClassNotFoundException {
+        Configuration conf = HBaseConfiguration.create();
+        KmeansDriver.initProcessCache(conf);
+
+        conf.set(CentersInitializer.K, String.valueOf(k));
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(CentersInitializer.class);
+        job.setMapperClass(CentersInitializer.MyMapper.class);
+        job.setReducerClass(CentersInitializer.MyReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+//        FileInputFormat.addInputPath(job, new Path("/cit/input/doc"));
+//        FileOutputFormat.setOutputPath(job, new Path("/cit/output"));
+//        TextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
+//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
+
+        job.setInputFormatClass(KeyValueTextInputFormat.class);
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        FileSystem fs = FileSystem.get(conf);
+        if (fs.exists(new Path(outputDir))) {
+            fs.delete(new Path(outputDir), true);
+        }
+
+        job.waitForCompletion(true);
     }
 
 }

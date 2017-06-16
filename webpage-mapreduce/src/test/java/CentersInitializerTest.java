@@ -2,6 +2,7 @@ import mapred.CentersInitializer;
 import mapred.KmeansDriver;
 import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.io.Text;
@@ -14,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -46,7 +48,8 @@ public class CentersInitializerTest {
     /**
      * 用于创建测试数据文件
      */
-    public static void creatTestData() throws IOException, ClassNotFoundException, InterruptedException {
+    @Test
+    public void creatTestData() throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = HBaseConfiguration.create();
         KmeansDriver.initProcessCache(conf);
 
@@ -59,37 +62,21 @@ public class CentersInitializerTest {
         TextInputFormat.addInputPath(job, new Path("/cit/input/01"));
         TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
 
-        job.waitForCompletion(true);
-    }
-
-
-    public static void test() throws IOException, ClassNotFoundException, InterruptedException {
-        Configuration conf = HBaseConfiguration.create();
-        KmeansDriver.initProcessCache(conf);
-
-        conf.set(CentersInitializer.K, "2");
-        Job job = Job.getInstance(conf);
-        job.setJarByClass(CentersInitializer.class);
-        job.setMapperClass(CentersInitializer.MyMapper.class);
-        job.setReducerClass(CentersInitializer.MyReducer.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(Text.class);
-//        FileInputFormat.addInputPath(job, new Path("/cit/input/doc"));
-//        FileOutputFormat.setOutputPath(job, new Path("/cit/output"));
-//        TextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
-//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
-        KeyValueTextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
-//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
-        SequenceFileOutputFormat.setOutputPath(job, new Path("/cit/output"));
-        job.setInputFormatClass(KeyValueTextInputFormat.class);
-        job.setOutputFormatClass(SequenceFileOutputFormat.class);
-
+        FileSystem fs = FileSystem.get(conf);
+        if (fs.exists(new Path("/cit/output"))) {
+            fs.delete(new Path("/cit/output"), true);
+        }
 
         job.waitForCompletion(true);
     }
 
-    public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
-//        creatTestData();
-        test();
+
+    @Test
+    public void testStart() throws InterruptedException, IOException, ClassNotFoundException {
+        String vectorFilePath = "/cit/input/doc";
+        String outputDir = "/cit/output";
+        int k = 3;
+        CentersInitializer.start(vectorFilePath, outputDir, k);
     }
+
 }
