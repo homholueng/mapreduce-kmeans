@@ -54,12 +54,12 @@ public class KmeansTest {
 
 
     @Test
-    public void testRunKmeans() throws InterruptedException, IOException, ClassNotFoundException {
+    public void testStart() throws InterruptedException, IOException, ClassNotFoundException {
         String vectorFilePath = "/km/input";
         String centersFilePath = "/cit/output/part-r-00000";
         String outputDir = "/km/output";
         int totalIter = 10;
-        Kmeans.runKmeans(vectorFilePath, centersFilePath, outputDir, totalIter);
+        Kmeans.start(vectorFilePath, centersFilePath, outputDir, totalIter);
     }
 
 

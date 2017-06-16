@@ -274,7 +274,7 @@ public class Kmeans {
      * @throws ClassNotFoundException
      * @throws InterruptedException
      */
-    public static void runKmeans(String vectorFilePath, String centersFilePath, String outputDir, int totalIter) throws InterruptedException, IOException, ClassNotFoundException {
+    public static void start(String vectorFilePath, String centersFilePath, String outputDir, int totalIter) throws InterruptedException, IOException, ClassNotFoundException {
         String newCentersDir = null;
         String dirPrefix = "/km/";
         for (int iter = 1; iter < totalIter; iter++) {
