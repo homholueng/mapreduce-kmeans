@@ -19,8 +19,14 @@ import java.io.IOException;
  */
 public class KmeansTest {
 
+    /**
+     * 测试运行一个 Kmeans
+     * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws InterruptedException
+     */
     @Test
-    public void test() throws IOException, ClassNotFoundException, InterruptedException {
+    public void testIterationOnce() throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = HBaseConfiguration.create();
         KmeansDriver.initProcessCache(conf);
 
@@ -46,5 +52,18 @@ public class KmeansTest {
 
         job.waitForCompletion(true);
     }
+
+
+    @Test
+    public void testRunKmeans() throws InterruptedException, IOException, ClassNotFoundException {
+        String vectorFilePath = "/km/input";
+        String centersFilePath = "/cit/output/part-r-00000";
+        String outputDir = "/km/output";
+        int totalIter = 10;
+        Kmeans.runKmeans(vectorFilePath, centersFilePath, outputDir, totalIter);
+    }
+
+
+
 
 }

@@ -4,10 +4,16 @@ import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -195,6 +201,77 @@ public class Kmeans {
             value.set(convert(newVector));
             context.write(key, value);
         }
+
+    }
+
+
+    /**
+     * 运行一次 Kmeans
+     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param centersFilePath 存放中心点向量的文件路径（中心点ID->v1&v2&v3...）
+     * @param outputDir 输出目录
+     * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws InterruptedException
+     */
+    public static void runKmeansOnce(String vectorFilePath, String centersFilePath, String outputDir) throws IOException, ClassNotFoundException, InterruptedException {
+        Configuration conf = HBaseConfiguration.create();
+        FileSystem fs = FileSystem.get(conf);
+
+        conf.set(Constants.VECTOR_SEPERATOR, "&");
+        conf.set(Kmeans.CENTERS_PATH, centersFilePath);
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(Kmeans.class);
+        job.setMapperClass(Kmeans.MyMapper.class);
+        job.setReducerClass(Kmeans.MyReduce.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+
+        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(KeyValueTextInputFormat.class);
+
+//        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+//        job.setInputFormatClass(SequenceFileInputFormat.class);
+
+        SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+
+//        TextOutputFormat.setOutputPath(job, new Path(outputDir));
+
+
+        if (fs.exists(new Path(outputDir))) {
+            fs.delete(new Path(outputDir), true);
+        }
+
+        job.waitForCompletion(true);
+    }
+
+    /**
+     * 是启动 Kmeans 的入口,
+     * 运行 totalIter 次迭代的 Kmeans
+     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param centersFilePath 存放中心点向量的文件路径（中心点ID->v1&v2&v3...）
+     * @param outputDir 输出目录
+     * @param totalIter 迭代次数
+     * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws InterruptedException
+     */
+    public static void runKmeans(String vectorFilePath, String centersFilePath, String outputDir, int totalIter) throws InterruptedException, IOException, ClassNotFoundException {
+        String oldCentersFilePath = centersFilePath;
+        String newCentersDir = null;
+        String dirPrefix = "/km/";
+        for (int iter = 1; iter < totalIter; iter++) {
+            newCentersDir = dirPrefix + iter;
+            runKmeansOnce(vectorFilePath, centersFilePath, newCentersDir);
+            centersFilePath = newCentersDir + "/part-r-00000";
+        }
+        runKmeansOnce(vectorFilePath, centersFilePath, outputDir);
+    }
+
+    public static void main(String[] args) {
 
     }
 }
