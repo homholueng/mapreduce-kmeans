@@ -17,7 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 使用经过 Kmeans 训练而产生的中心点向量集合来对网页进行聚类
+ * 使用经过 Kmeans 训练而产生的中心点向量集合来对网页进行聚类,
+ * 启动入口在 start()
  * Created by yuan on 17-6-16.
  */
 public class KmeansOutputer {
@@ -72,7 +73,7 @@ public class KmeansOutputer {
 
     /**
      * KmeansOutputer 启动入口
-     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param vectorFilePath 存放网页向量的文件路径或者目录（网页ID->v1&v2&v3...）
      * @param centersFilePath 存放中心点向量的文件路径（中心点ID->v1&v2&v3...）
      * @param outputDir 输出目录
      * @throws InterruptedException

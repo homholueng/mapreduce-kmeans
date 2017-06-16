@@ -18,9 +18,10 @@ import java.io.*;
 import java.util.*;
 
 /**
- * 用于初始化簇心，需要在 Configuration 设置 K 和 docIDFilePath
- * K: 指定有几个簇
- * docIDFilePath: 用于存放所有网页ID的DistributedCache文件路径
+ * 用于初始化簇心，需要在 Configuration 设置 K 和 docIDFilePath,
+ * K: 指定有几个簇,
+ * docIDFilePath: 用于存放所有网页ID的DistributedCache文件路径,
+ * 启动入口在 start()
  * Created by yuan on 17-6-15.
  */
 public class CentersInitializer {
@@ -102,7 +103,7 @@ public class CentersInitializer {
 
     /**
      * CentersInitializer 启动入口
-     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param vectorFilePath 存放网页向量的文件路径或者目录（网页ID->v1&v2&v3...）
      * @param outputDir 输出目录
      * @param k 要聚类的个数
      * @throws InterruptedException

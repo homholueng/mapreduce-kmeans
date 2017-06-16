@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 用于 Kmeans 迭代产出中心点集合
+ * 用于 Kmeans 迭代产出中心点集合,
+ * 启动入口在 start()
  * Created by yuan on 17-6-16.
  */
 public class Kmeans {
@@ -222,7 +223,7 @@ public class Kmeans {
 
     /**
      * 运行一次 Kmeans
-     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param vectorFilePath 存放网页向量的文件路径或者目录（网页ID->v1&v2&v3...）
      * @param centersFilePath 存放中心点向量的文件路径（中心点ID->v1&v2&v3...）
      * @param outputDir 输出目录
      * @throws IOException
@@ -266,7 +267,7 @@ public class Kmeans {
     /**
      * 是启动 Kmeans 的入口,
      * 运行 totalIter 次迭代的 Kmeans
-     * @param vectorFilePath 存放网页向量的文件路径（网页ID->v1&v2&v3...）
+     * @param vectorFilePath 存放网页向量的文件路径或者目录（网页ID->v1&v2&v3...）
      * @param centersFilePath 存放中心点向量的文件路径（中心点ID->v1&v2&v3...）
      * @param outputDir 输出目录
      * @param totalIter 迭代次数
