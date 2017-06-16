@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -52,7 +53,7 @@ public class Kmeans {
 
     public static class MyMapper extends Mapper<Text, Text, Text, Text> {
 
-        private static Map<String, double[]> centers;
+        private static Map<String, double[]> centers = new HashMap<String, double[]>();
 
 
         /**
@@ -111,6 +112,7 @@ public class Kmeans {
                 curDistance = calDistance(centerVector, docVector);
                 if (curDistance < minDistance) {
                     nearestCenterID = center.getKey();
+                    minDistance = curDistance;
                 }
             }
             return nearestCenterID;
