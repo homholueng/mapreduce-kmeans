@@ -10,6 +10,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
@@ -65,7 +66,7 @@ public class Kmeans {
      * @param centers
      * @throws IOException
      */
-    public static void readCentersFile(Mapper.Context context, Map<String, double[]> centers) throws IOException {
+    public static void readCentersFile(TaskInputOutputContext context, Map<String, double[]> centers) throws IOException {
         Configuration conf = context.getConfiguration();
         Path centersPath = new Path(conf.get(CENTERS_PATH));
         FileSystem fs = FileSystem.get(conf);
@@ -120,6 +121,7 @@ public class Kmeans {
     public static class MyMapper extends Mapper<Text, Text, Text, Text> {
 
         private static Map<String, double[]> centers = new HashMap<String, double[]>();
+        private static final Text FLAG = new Text("");
 
 
         /**
@@ -151,6 +153,10 @@ public class Kmeans {
             String nearestCenterID = findNearestCenter(vector, centers);
             key.set(nearestCenterID);
             context.write(key, value);
+            for (String centerID : centers.keySet()) {
+                key.set(centerID);
+                context.write(key, FLAG);
+            }
         }
 
 
@@ -160,6 +166,13 @@ public class Kmeans {
     public static class MyReduce extends Reducer<Text, Text, Text, Text> {
         private Text value = new Text();
 
+        private static Map<String, double[]> centers = new HashMap<String, double[]>();
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            readCentersFile(context, centers);
+        }
 
         private static double[] initialNewVector(int len) {
             double[] v = new double[len];
@@ -205,7 +218,15 @@ public class Kmeans {
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             double[] newVector = null;
             int count = 0;
+            if (needToReserve(values)) {
+                value = new Text(convert(centers.get(key.toString())));
+                context.write(key, value);
+                return;
+            }
             for (Text value : values) {
+                if ("".equals(value.toString())) {
+                    continue;
+                }
                 double[] vector = convert(value.toString());
                 if (newVector == null) {
                     newVector = initialNewVector(vector.length);
@@ -216,6 +237,20 @@ public class Kmeans {
             average(newVector, count);
             value.set(convert(newVector));
             context.write(key, value);
+        }
+
+        /**
+         * 判断该中心点是否直接保留上一次的向量而不更新
+         * @param values
+         * @return
+         */
+        private boolean needToReserve(Iterable<Text> values) {
+            for (Text value : values) {
+                if (value.toString().equals(MyMapper.FLAG.toString())) {
+                    return false;
+                }
+            }
+            return true;
         }
 
     }

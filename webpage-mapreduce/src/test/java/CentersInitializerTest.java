@@ -95,7 +95,7 @@ public class CentersInitializerTest {
     public void testStart() throws InterruptedException, IOException, ClassNotFoundException {
         String vectorFilePath = "/cit/input/doc";
         String outputDir = "/cit/output";
-        int k = 3;
+        int k = 20;
         CentersInitializer.start(vectorFilePath, outputDir, k);
     }
 
