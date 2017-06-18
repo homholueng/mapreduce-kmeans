@@ -224,7 +224,7 @@ public class Kmeans {
                 return;
             }
             for (Text value : values) {
-                if ("".equals(value.toString())) {
+                if (MyMapper.FLAG.toString().equals(value.toString())) {
                     continue;
                 }
                 double[] vector = convert(value.toString());
@@ -246,7 +246,7 @@ public class Kmeans {
          */
         private boolean needToReserve(Iterable<Text> values) {
             for (Text value : values) {
-                if (value.toString().equals(MyMapper.FLAG.toString())) {
+                if (!value.toString().equals(MyMapper.FLAG.toString())) {
                     return false;
                 }
             }
