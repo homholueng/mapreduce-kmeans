@@ -38,7 +38,7 @@ public class PutTestData {
         }
         Table table = connection.getTable(tableName);
 
-        File file = new File("src/main/resources/data");
+        File file = new File("src/main/resources/store3.txt");
         BufferedReader reader = new BufferedReader(new FileReader(file));
 
         String line = "";

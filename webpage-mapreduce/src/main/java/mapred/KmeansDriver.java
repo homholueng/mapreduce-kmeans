@@ -121,7 +121,7 @@ public class KmeansDriver {
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         System.setProperty("HADOOP_USER_NAME", "root");
         Configuration configuration = HBaseConfiguration.create();
-        configuration.set("mapreduce.job.jar", "src/webpage-mapreduce-1.0-SNAPSHOT-jar-with-dependencies.jar");
+        configuration.set("mapreduce.job.jar", "target/webpage-mapreduce-1.0-SNAPSHOT-jar-with-dependencies.jar");
         initProcessCache(configuration);
         FileSystem fs = FileSystem.get(configuration);
 
@@ -270,9 +270,9 @@ public class KmeansDriver {
         Kmeans.startWithConf(VECTOR_BUILDER_OUTPUT, CENTERS_FILE_PATH, FINAL_CENTERS_OUTPUT, TOTAL_ITER, configuration);
 
         //7
-        vectorFilePath = "/km/input";
-        String centersFilePath = "/km/output/part-r-00000";
-        outputDir = "/final/output";
+        vectorFilePath = VECTOR_BUILDER_OUTPUT;
+        String centersFilePath = FINAL_CENTERS_FILE_PATH;
+        outputDir = "final/output";
         KmeansOutputer.startWithConf(vectorFilePath, centersFilePath, outputDir, configuration);
 
 

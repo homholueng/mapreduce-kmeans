@@ -419,6 +419,6 @@ public class Kmeans {
             runKmeansOnceWithConf(vectorFilePath, centersFilePath, newCentersDir, conf);
             centersFilePath = newCentersDir + "/part-r-00000";
         }
-        runKmeansOnce(vectorFilePath, centersFilePath, outputDir);
+        runKmeansOnceWithConf(vectorFilePath, centersFilePath, outputDir, conf);
     }
 }
