@@ -80,7 +80,10 @@ public class CentersInitializerTest {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         TextInputFormat.addInputPath(job, new Path("/cit/input/01"));
-        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+
+        SequenceFileOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
         FileSystem fs = FileSystem.get(conf);
         if (fs.exists(new Path("/cit/output"))) {
