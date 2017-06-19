@@ -1,11 +1,19 @@
 package mapred;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -13,11 +21,12 @@ import java.util.Map;
 
 import static mapred.config.Constants.SEPERATOR;
 import static mapred.config.Constants.PAGE_COUNT_NAME;
+import static mapred.config.Constants.WORDS_FILE_PATH_NAME;
 
 /**
  * Created by Leaf on 2017/6/15.
  */
-public class TfIdf {
+public class TfIdf extends Configured implements Tool {
     public static class TFIDFMapper extends Mapper<Text, DoubleWritable, Text, Text> {
         /**
          *
@@ -29,7 +38,13 @@ public class TfIdf {
          */
         @Override
         protected void map(Text key, DoubleWritable value, Context context) throws IOException, InterruptedException {
+            // 测试用
+//            String[] keyValue = value.toString().split("\t");
+//            String[] wordAndId = keyValue[0].split(SEPERATOR);
+//            System.out.println(wordAndId[0]);
+//            context.write(new Text(wordAndId[0]), new Text(wordAndId[1] + SEPERATOR + keyValue[1]));
             String[] wordAndId = key.toString().split(SEPERATOR);
+            System.out.printf(wordAndId[0]);
             context.write(new Text(wordAndId[0]), new Text(wordAndId[1] + SEPERATOR + value.toString()));
         }
     }
@@ -82,7 +97,7 @@ public class TfIdf {
         protected void cleanup(Context context) throws IOException, InterruptedException {
             // 将构建的单词表写的文件里面去
             Configuration conf = context.getConfiguration();
-            Path path = new Path(conf.get("DICPATH"));
+            Path path = new Path(conf.get(WORDS_FILE_PATH_NAME));
             FileSystem fs = FileSystem.get(conf);
             fs.delete(path, true);
             SequenceFile.Writer.Option outPath = SequenceFile.Writer.file(path);
@@ -95,5 +110,48 @@ public class TfIdf {
             out.close();
             super.cleanup(context);
         }
+    }
+
+    public int run(String[] args) throws Exception {
+        if (args.length < 2) {
+            System.out.println("Usage: mapred.TfIdf <input path> <output path>");
+        }
+
+        Configuration conf = getConf();
+        conf.setInt(PAGE_COUNT_NAME, 10);
+        conf.set(WORDS_FILE_PATH_NAME, "/Users/Leaf/Desktop/dict.txt");
+        FileSystem fs = FileSystem.get(conf);
+
+        Path inPath = new Path(args[0]);
+        Path outPath = new Path(args[1]);
+
+        if (fs.exists(outPath)) {
+            fs.delete(outPath, true);
+        }
+
+        Job job = Job.getInstance(conf);
+
+
+        FileInputFormat.addInputPath(job, inPath);
+
+
+        job.setJarByClass(TfIdf.class);
+        job.setJobName("TFIDF");
+        job.setInputFormatClass(KeyValueTextInputFormat.class);
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+        FileOutputFormat.setOutputPath(job, outPath);
+        job.setMapperClass(TfIdf.TFIDFMapper.class);
+        job.setReducerClass(TfIdf.TFIDFReducer.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(Text.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(DoubleWritable.class);
+
+        return job.waitForCompletion(true) ? 0 : 1;
+    }
+
+    public static void main(String[] args) throws Exception {
+        int res = ToolRunner.run(new Configuration(), new TfIdf(), args);
+        System.exit(res);
     }
 }
