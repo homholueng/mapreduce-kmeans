@@ -116,4 +116,37 @@ public class KmeansOutputer {
         job.waitForCompletion(true);
 
     }
+    public static void startWithConf(String vectorFilePath, String centersFilePath, String outputDir, Configuration conf) throws InterruptedException, IOException, ClassNotFoundException {
+        FileSystem fs = FileSystem.get(conf);
+
+        conf.set(Constants.VECTOR_SEPERATOR, "&");
+        conf.set(Kmeans.CENTERS_PATH, centersFilePath);
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(KmeansOutputer.class);
+        job.setMapperClass(KmeansOutputer.MyMapper.class);
+        job.setReducerClass(KmeansOutputer.MyReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+
+//        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+//        job.setInputFormatClass(KeyValueTextInputFormat.class);
+
+        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(SequenceFileInputFormat.class);
+
+//        SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
+//        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+
+        TextOutputFormat.setOutputPath(job, new Path(outputDir));
+        job.setOutputFormatClass(TextOutputFormat.class);
+
+
+        if (fs.exists(new Path(outputDir))) {
+            fs.delete(new Path(outputDir), true);
+        }
+
+        job.waitForCompletion(true);
+    }
 }

@@ -1,6 +1,7 @@
 package mapred;
 
 import hbase.config.TableConfig;
+import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,12 +15,8 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-import org.lionsoul.jcseg.tokenizer.core.IWord;
 import util.SegmentorFactory;
 
 import java.io.BufferedWriter;
@@ -83,13 +80,13 @@ public class KmeansDriver {
             ids.add(new String(bytesWritable.get()));
 
             // make segment on content
-            byte[] bytes = row.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
-            String content = new String(bytes);
-            seg.reset(content);
-            IWord word = null;
-            while ((word = seg.next()) != null) {
-                words.add(word.getValue());
-            }
+//            byte[] bytes = row.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
+//            String content = new String(bytes);
+//            seg.reset(content);
+//            IWord word = null;
+//            while ((word = seg.next()) != null) {
+//                words.add(word.getValue());
+//            }
             ++pageCount;
         }
 
@@ -122,11 +119,15 @@ public class KmeansDriver {
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+        System.setProperty("HADOOP_USER_NAME", "root");
         Configuration configuration = HBaseConfiguration.create();
+        configuration.set("mapreduce.job.jar", "src/webpage-mapreduce-1.0-SNAPSHOT-jar-with-dependencies.jar");
         initProcessCache(configuration);
+        FileSystem fs = FileSystem.get(configuration);
 
         // 1
         Job job1 = Job.getInstance(configuration);
+        job1.setJobName("PageContentSegment");
         job1.setJarByClass(PageContentSegmentor.class);
         job1.setMapperClass(PageContentSegmentor.MapClass.class);
         job1.setReducerClass(PageContentSegmentor.Reduce.class);
@@ -138,7 +139,7 @@ public class KmeansDriver {
         scan.setCacheBlocks(false);
 
         Path out1 = new Path(RESULT_1_PATH);
-        FileSystem.get(configuration).delete(out1, true);
+        fs.delete(out1, true);
 
         TableMapReduceUtil.initTableMapperJob(
                 TableConfig.NEWS_TABLE_NAME,
@@ -158,16 +159,16 @@ public class KmeansDriver {
         job1.waitForCompletion(true);
 
         // 2
-        Configuration configuration2 = new Configuration();
 
-        Job job2 = Job.getInstance(configuration2);
+        Job job2 = Job.getInstance(configuration);
+        job2.setJobName("WordPercentCount");
         job2.setJarByClass(WordPercentCounter.class);
         job2.setMapperClass(WordPercentCounter.MapClass.class);
         job2.setReducerClass(WordPercentCounter.Reduce.class);
 
         Path in2 = new Path(RESULT_1_PATH);
         Path out2 = new Path(RESULT_2_PATH);
-        FileSystem.get(configuration2).delete(out2,true);
+        fs.delete(out2,true);
 
         SequenceFileInputFormat.addInputPath(job2, in2);
         SequenceFileOutputFormat.setOutputPath(job2, out2);
@@ -182,19 +183,17 @@ public class KmeansDriver {
         job2.waitForCompletion(true);
 
         // 3
-        Configuration configuration3 = new Configuration();
-        configuration3.setInt(PAGE_COUNT_NAME, configuration.getInt(PAGE_COUNT_NAME, 100000));
-        configuration3.set(WORDS_FILE_PATH_NAME, HDFS_PREFIX + WORDS_CACHE_PATH);
-        FileSystem fs3 = FileSystem.get(configuration3);
+        configuration.setInt(PAGE_COUNT_NAME, configuration.getInt(PAGE_COUNT_NAME, 100000));
+        configuration.set(WORDS_FILE_PATH_NAME, HDFS_PREFIX + WORDS_CACHE_PATH);
 
         Path inPath3 = new Path(RESULT_2_PATH);
         Path outPath3 = new Path(TFIDF_OUTPUT);
 
-        if (fs3.exists(outPath3)) {
-            fs3.delete(outPath3, true);
+        if (fs.exists(outPath3)) {
+            fs.delete(outPath3, true);
         }
 
-        Job job3 = Job.getInstance(configuration3);
+        Job job3 = Job.getInstance(configuration);
         job3.setJobName("TFIDF");
 
         job3.setJarByClass(TfIdf.class);
@@ -211,16 +210,14 @@ public class KmeansDriver {
         job3.setOutputKeyClass(Text.class);
         job3.setOutputValueClass(DoubleWritable.class);
 
-        FileInputFormat.addInputPath(job3, inPath3);
-        FileOutputFormat.setOutputPath(job3, outPath3);
+        SequenceFileInputFormat.addInputPath(job3, inPath3);
+        SequenceFileOutputFormat.setOutputPath(job3, outPath3);
 
         job3.waitForCompletion(true);
 
         // 4
-        Configuration configuration4 = new Configuration();
-        FileSystem fs4 = FileSystem.get(configuration4);
-        configuration4.set(WORDS_FILE_PATH_NAME, HDFS_PREFIX + WORDS_CACHE_PATH);
-        Job job4 = Job.getInstance(configuration4);
+        configuration.set(WORDS_FILE_PATH_NAME, HDFS_PREFIX + WORDS_CACHE_PATH);
+        Job job4 = Job.getInstance(configuration);
         job4.setJobName("Vector Builder");
 
         job4.setJarByClass(VectorBuilder.class);
@@ -236,30 +233,51 @@ public class KmeansDriver {
         job4.setMapOutputKeyClass(Text.class);
         job4.setMapOutputValueClass(Text.class);
 
-        if (fs4.exists(new Path(VECTOR_BUILDER_OUTPUT))) {
-            fs4.delete(new Path(VECTOR_BUILDER_OUTPUT), true);
+        if (fs.exists(new Path(VECTOR_BUILDER_OUTPUT))) {
+            fs.delete(new Path(VECTOR_BUILDER_OUTPUT), true);
         }
 
-        FileInputFormat.setInputPaths(job4, new Path(TFIDF_OUTPUT));
-        FileOutputFormat.setOutputPath(job4, new Path(VECTOR_BUILDER_OUTPUT));
+        SequenceFileInputFormat.setInputPaths(job4, new Path(TFIDF_OUTPUT));
+        SequenceFileOutputFormat.setOutputPath(job4, new Path(VECTOR_BUILDER_OUTPUT));
 
         job4.waitForCompletion(true);
 
         //5
-        CentersInitializer.start(VECTOR_BUILDER_OUTPUT, INITIAL_CENTERS_OUTPUT, K);
+        String vectorFilePath = VECTOR_BUILDER_OUTPUT;
+        String outputDir = INITIAL_CENTERS_OUTPUT;
+        configuration.get(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
+        configuration.set(CentersInitializer.K, String.valueOf(K));
+        Job job = Job.getInstance(configuration);
+        job.setJarByClass(CentersInitializer.class);
+        job.setMapperClass(CentersInitializer.MyMapper.class);
+        job.setReducerClass(CentersInitializer.MyReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(SequenceFileInputFormat.class);
+
+        SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        if (fs.exists(new Path(outputDir))) {
+            fs.delete(new Path(outputDir), true);
+        }
+
+        job.waitForCompletion(true);
 
         //6
-        Kmeans.start(VECTOR_BUILDER_OUTPUT, CENTERS_FILE_PATH, FINAL_CENTERS_OUTPUT, TOTAL_ITER);
+        Kmeans.startWithConf(VECTOR_BUILDER_OUTPUT, CENTERS_FILE_PATH, FINAL_CENTERS_OUTPUT, TOTAL_ITER, configuration);
 
         //7
-        String vectorFilePath = "/km/input";
+        vectorFilePath = "/km/input";
         String centersFilePath = "/km/output/part-r-00000";
-        String outputDir = "/final/output";
-        KmeansOutputer.start(vectorFilePath, centersFilePath, outputDir);
+        outputDir = "/final/output";
+        KmeansOutputer.startWithConf(vectorFilePath, centersFilePath, outputDir, configuration);
 
 
         //8
-        KmeansOutputer.start(VECTOR_BUILDER_OUTPUT, FINAL_CENTERS_FILE_PATH, FINAL_OUTPUT);
+        KmeansOutputer.startWithConf(VECTOR_BUILDER_OUTPUT, FINAL_CENTERS_FILE_PATH, FINAL_OUTPUT, configuration);
 
     }
 }

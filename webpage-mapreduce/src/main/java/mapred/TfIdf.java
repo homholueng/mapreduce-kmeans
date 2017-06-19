@@ -44,8 +44,9 @@ public class TfIdf extends Configured implements Tool {
 //            System.out.println(wordAndId[0]);
 //            context.write(new Text(wordAndId[0]), new Text(wordAndId[1] + SEPERATOR + keyValue[1]));
             String[] wordAndId = key.toString().split(SEPERATOR);
-            System.out.printf(wordAndId[0]);
-            context.write(new Text(wordAndId[0]), new Text(wordAndId[1] + SEPERATOR + value.toString()));
+            StringBuilder sb = new StringBuilder();
+            sb.append(wordAndId[1]).append(SEPERATOR).append(value.get());
+            context.write(new Text(wordAndId[0]), new Text(sb.toString()));
         }
     }
 
