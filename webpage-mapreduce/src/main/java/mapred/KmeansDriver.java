@@ -14,7 +14,10 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.lionsoul.jcseg.tokenizer.core.IWord;
 import util.SegmentorFactory;
@@ -41,6 +44,8 @@ public class KmeansDriver {
 
     static final String RESULT_1_PATH = "kmeans-mapred1";
     static final String RESULT_2_PATH = "kmeans-mapred2";
+    static final String TFIDF_OUTPUT = "kmeans-mapred-tfidf-output";
+    static final String VECTOR_BUILDER_OUTPUT = "kmeans-mapred-vector-builder-output";
 
     public static void initProcessCache(Configuration configuration) throws IOException {
         Connection connection = ConnectionFactory.createConnection(configuration);
@@ -161,9 +166,68 @@ public class KmeansDriver {
         job2.waitForCompletion(true);
 
         // 3
+        Configuration configuration3 = new Configuration();
+        configuration3.setInt(PAGE_COUNT_NAME, configuration.getInt(PAGE_COUNT_NAME, 100000));
+        configuration3.set(WORDS_FILE_PATH_NAME, HDFS_PREFIX + WORDS_CACHE_PATH);
+        FileSystem fs3 = FileSystem.get(configuration3);
+
+        Path inPath3 = new Path(RESULT_2_PATH);
+        Path outPath3 = new Path(TFIDF_OUTPUT);
+
+        if (fs3.exists(outPath3)) {
+            fs3.delete(outPath3, true);
+        }
+
+        Job job3 = Job.getInstance(configuration3);
+        job3.setJobName("TFIDF");
+
+        job3.setJarByClass(TfIdf.class);
+
+        job3.setInputFormatClass(SequenceFileInputFormat.class);
+        job3.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        job3.setMapperClass(TfIdf.TFIDFMapper.class);
+        job3.setReducerClass(TfIdf.TFIDFReducer.class);
+
+        job3.setMapOutputKeyClass(Text.class);
+        job3.setMapOutputValueClass(Text.class);
+
+        job3.setOutputKeyClass(Text.class);
+        job3.setOutputValueClass(DoubleWritable.class);
+
+        FileInputFormat.addInputPath(job3, inPath3);
+        FileOutputFormat.setOutputPath(job3, outPath3);
+
+        job3.waitForCompletion(true);
 
         // 4
+        Configuration configuration4 = new Configuration();
+        FileSystem fs4 = FileSystem.get(configuration4);
+        configuration4.set(WORDS_FILE_PATH_NAME, HDFS_PREFIX + WORDS_CACHE_PATH);
+        Job job4 = Job.getInstance(configuration4);
+        job4.setJobName("Vector Builder");
 
+        job4.setJarByClass(VectorBuilder.class);
+        job4.setMapperClass(VectorBuilder.VectorBuilderMapper.class);
+        job4.setReducerClass(VectorBuilder.VectorBuilderReducer.class);
+
+        job4.setOutputKeyClass(Text.class);
+        job4.setOutputValueClass(Text.class);
+
+        job4.setInputFormatClass(SequenceFileInputFormat.class);
+        job4.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        job4.setMapOutputKeyClass(Text.class);
+        job4.setMapOutputValueClass(Text.class);
+
+        if (fs4.exists(new Path(VECTOR_BUILDER_OUTPUT))) {
+            fs4.delete(new Path(VECTOR_BUILDER_OUTPUT), true);
+        }
+
+        FileInputFormat.setInputPaths(job4, new Path(TFIDF_OUTPUT));
+        FileOutputFormat.setOutputPath(job4, new Path(VECTOR_BUILDER_OUTPUT));
+
+        job4.waitForCompletion(true);
         // ...
     }
 }
