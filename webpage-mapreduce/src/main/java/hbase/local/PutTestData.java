@@ -56,6 +56,8 @@ public class PutTestData {
                     Bytes.toBytes(fields[1]));
             news.addColumn(Bytes.toBytes(META_FAMILY), Bytes.toBytes(SUB_TYPE_QUALIFIER),
                     Bytes.toBytes(""));
+//            news.addColumn(Bytes.toBytes(META_FAMILY), Bytes.toBytes(URL_QUALIFIER),
+//                    Bytes.toBytes(fields[3]));
 
             table.put(news);
         }

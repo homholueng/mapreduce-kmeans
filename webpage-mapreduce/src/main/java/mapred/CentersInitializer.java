@@ -2,20 +2,19 @@ package mapred;
 
 import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.mapreduce.lib.fieldsel.FieldSelectionHelper;
-import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 
 /**
@@ -116,6 +115,31 @@ public class CentersInitializer {
         KmeansDriver.initProcessCache(conf);
 
         conf.set(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
+        conf.set(CentersInitializer.K, String.valueOf(k));
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(CentersInitializer.class);
+        job.setMapperClass(CentersInitializer.MyMapper.class);
+        job.setReducerClass(CentersInitializer.MyReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+//        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(SequenceFileInputFormat.class);
+
+//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
+        SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        FileSystem fs = FileSystem.get(conf);
+        if (fs.exists(new Path(outputDir))) {
+            fs.delete(new Path(outputDir), true);
+        }
+
+        job.waitForCompletion(true);
+    }
+    public static void startWithConf(String vectorFilePath, String outputDir, int k, Configuration conf) throws InterruptedException, IOException, ClassNotFoundException {
+        conf.get(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
         conf.set(CentersInitializer.K, String.valueOf(k));
         Job job = Job.getInstance(conf);
         job.setJarByClass(CentersInitializer.class);

@@ -11,4 +11,5 @@ public class TableConfig {
     public static final String TITLE_QUALIFIER = "title";
     public static final String MAIN_TYPE_QUALIFIER = "m_type";
     public static final String SUB_TYPE_QUALIFIER = "s_type";
+    public static final String URL_QUALIFIER = "url";
 }

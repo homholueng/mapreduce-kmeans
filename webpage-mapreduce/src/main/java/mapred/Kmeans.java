@@ -376,4 +376,49 @@ public class Kmeans {
         runKmeansOnce(vectorFilePath, centersFilePath, outputDir);
     }
 
+
+    public static void runKmeansOnceWithConf(String vectorFilePath, String centersFilePath, String outputDir, Configuration conf) throws IOException, ClassNotFoundException, InterruptedException {
+        FileSystem fs = FileSystem.get(conf);
+
+        conf.set(Constants.VECTOR_SEPERATOR, "&");
+        conf.set(Kmeans.CENTERS_PATH, centersFilePath);
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(Kmeans.class);
+        job.setMapperClass(Kmeans.MyMapper.class);
+        job.setReducerClass(Kmeans.MyReduce.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+
+//        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+//        job.setInputFormatClass(KeyValueTextInputFormat.class);
+
+        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(SequenceFileInputFormat.class);
+
+        SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+
+//        TextOutputFormat.setOutputPath(job, new Path(outputDir));
+
+
+        if (fs.exists(new Path(outputDir))) {
+            fs.delete(new Path(outputDir), true);
+        }
+
+        job.waitForCompletion(true);
+    }
+
+    public static void startWithConf(String vectorFilePath, String centersFilePath, String outputDir, int totalIter,
+        Configuration conf) throws InterruptedException, IOException, ClassNotFoundException {
+        String newCentersDir = null;
+        String dirPrefix = "/km/";
+        for (int iter = 1; iter < totalIter; iter++) {
+            newCentersDir = dirPrefix + iter;
+            runKmeansOnceWithConf(vectorFilePath, centersFilePath, newCentersDir, conf);
+            centersFilePath = newCentersDir + "/part-r-00000";
+        }
+        runKmeansOnce(vectorFilePath, centersFilePath, outputDir);
+    }
 }
