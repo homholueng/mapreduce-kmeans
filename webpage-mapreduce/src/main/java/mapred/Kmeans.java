@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.mapreduce.SyncTable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -36,12 +37,15 @@ public class Kmeans {
      * @return
      */
     public static double[] convert(String s) {
+//        System.out.println("convert(String s): " + s);
         String[] strs = s.split(Constants.VECTOR_SEPERATOR);
         int len = strs.length;
         double[] vector = new double[len];
         for (int i = 0; i < len; i++) {
             vector[i] = Double.parseDouble(strs[i]);
+//            System.out.print(vector[i] + ",");
         }
+//        System.out.println();
         return vector;
     }
 
@@ -77,7 +81,19 @@ public class Kmeans {
         while (reader.next(centerID, value)) {
             double[] vector = convert(value.toString());
             centers.put(centerID.toString(), vector);
-            System.out.println(centerID.toString() + ": " + vector);
+        }
+//        printCenters(centers);
+    }
+
+    private static void printCenters(Map<String, double[]> centers) {
+        System.out.println("printCenters(Map<String, double[]> centers:)");
+        for (Map.Entry<String, double[]> center : centers.entrySet()) {
+            System.out.println("centerID: " + center.getKey());
+            double[] v = center.getValue();
+            for (int i = 0; i < v.length; i++) {
+                System.out.print(v[i] + ", ");
+            }
+            System.out.println();
         }
     }
 
@@ -155,7 +171,7 @@ public class Kmeans {
     public static class MyMapper extends Mapper<Text, Text, Text, Text> {
 
         private static Map<String, double[]> centers = new HashMap<String, double[]>();
-        private static final Text FLAG = new Text("");
+        private static final Text FLAG = new Text("$$$$");
 
 
         /**
@@ -191,6 +207,7 @@ public class Kmeans {
                 key.set(centerID);
                 context.write(key, FLAG);
             }
+//            System.out.println("map(): " + value.toString());
         }
 
 
@@ -222,6 +239,9 @@ public class Kmeans {
          * @param count
          */
         private static void average(double[] v, int count) {
+            if (v == null) {
+                System.out.println("averay(double[] v, int count)!!! v is null, count:" + count);
+            }
             for (int i = 0; i < v.length; i++) {
                 v[i] /= count;
             }
@@ -252,13 +272,8 @@ public class Kmeans {
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             double[] newVector = null;
             int count = 0;
-            if (needToReserve(values)) {
-                value = new Text(convert(centers.get(key.toString())));
-                context.write(key, value);
-                return;
-            }
             for (Text value : values) {
-                if (MyMapper.FLAG.toString().equals(value.toString())) {
+                if (value.toString().equals(MyMapper.FLAG.toString())) {
                     continue;
                 }
                 double[] vector = convert(value.toString());
@@ -268,9 +283,15 @@ public class Kmeans {
                 add(newVector, vector);
                 count++;
             }
+            if (newVector == null) {
+                value = new Text(convert(centers.get(key.toString())));
+                context.write(key, value);
+                return;
+            }
             average(newVector, count);
             value.set(convert(newVector));
             context.write(key, value);
+
         }
 
         /**

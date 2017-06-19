@@ -113,9 +113,9 @@ public class CentersInitializer {
      */
     public static void start(String vectorFilePath, String outputDir, int k) throws InterruptedException, IOException, ClassNotFoundException {
         Configuration conf = HBaseConfiguration.create();
+        KmeansDriver.initProcessCache(conf);
 
-
-        conf.get(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
+        conf.set(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
         conf.set(CentersInitializer.K, String.valueOf(k));
         Job job = Job.getInstance(conf);
         job.setJarByClass(CentersInitializer.class);
