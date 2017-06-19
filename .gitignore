@@ -23,3 +23,5 @@ hs_err_pid*
 
 .idea/
 webpage-mapreduce/target/
+
+node_modules/
