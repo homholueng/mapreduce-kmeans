@@ -58,7 +58,7 @@ public class KmeansTest {
         String vectorFilePath = "/km/input";
         String centersFilePath = "/cit/output/part-r-00000";
         String outputDir = "/km/output";
-        int totalIter = 3;
+        int totalIter = 1;
         Kmeans.start(vectorFilePath, centersFilePath, outputDir, totalIter);
     }
 

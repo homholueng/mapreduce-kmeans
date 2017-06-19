@@ -98,6 +98,7 @@ public class Kmeans {
                 minDistance = curDistance;
             }
         }
+//        System.out.println("nearestCenterID: " + nearestCenterID);
         return nearestCenterID;
     }
 
@@ -107,7 +108,7 @@ public class Kmeans {
      * @param docVector
      * @return
      */
-    public static double calDistance(double[] centerVector, double[] docVector) {
+    public static double euclideanDistance(double[] centerVector, double[] docVector) {
         double sum = 0;
         for (int i = 0; i < centerVector.length && i < docVector.length; i++) {
             sum += Math.pow(centerVector[i] - docVector[i], 2);
@@ -115,6 +116,37 @@ public class Kmeans {
         sum = Math.sqrt(sum);
         return sum;
     }
+
+    /**
+     * 计算余弦距离
+     * @param centerVector
+     * @param docVector
+     * @return
+     */
+    public static double cosineDistance(double[] centerVector, double[] docVector) {
+        double result = 0;
+        double sum1 = 0, sum2 = 0;
+        for (int i = 0; i < centerVector.length && i < docVector.length; i++) {
+            result += centerVector[i] * docVector[i];
+            sum1 += Math.pow(centerVector[i], 2);
+            sum2 += Math.pow(docVector[i], 2);
+        }
+        sum1 = Math.sqrt(sum1);
+        sum2 = Math.sqrt(sum2);
+        return result / (sum1 + sum2);
+    }
+
+    /**
+     * 计算距离
+     * @param centerVector
+     * @param docVector
+     * @return
+     */
+    public static double calDistance(double[] centerVector, double[] docVector) {
+//        return euclideanDistance(centerVector, docVector);
+        return cosineDistance(centerVector, docVector);
+    }
+
 
 
 
