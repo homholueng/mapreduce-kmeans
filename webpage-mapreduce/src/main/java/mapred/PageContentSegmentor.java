@@ -1,7 +1,6 @@
 package mapred;
 
 import hbase.config.TableConfig;
-import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -17,13 +16,10 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.lionsoul.jcseg.tokenizer.core.IWord;
 import util.SegmentorFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import static hbase.config.TableConfig.CONTENT_FAMILY;
 import static hbase.config.TableConfig.CONTENT_QUALIFIER;
@@ -55,8 +51,7 @@ public class PageContentSegmentor {
         // output: 单词|网页编号->1
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            String id = key.toString();
-            id = id.replaceAll(" ", "");
+            String id = new String(key.get());
             byte[] bytes = value.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
             String content = new String(bytes);
 
@@ -91,20 +86,18 @@ public class PageContentSegmentor {
 //        configuration.set("mapred.textoutputformat.separator", "\t");
 
         Job job = Job.getInstance(configuration);
+        job.setJarByClass(PageContentSegmentor.class);
         job.setMapperClass(PageContentSegmentor.MapClass.class);
         job.setReducerClass(PageContentSegmentor.Reduce.class);
 
         Scan scan = new Scan();
         scan.addFamily(Bytes.toBytes(CONTENT_FAMILY));
+        // good for map reduce job
         scan.setCaching(500);
         scan.setCacheBlocks(false);
 
         Path out = new Path("mapred1_output_test");
         FileSystem.get(configuration).delete(out, true);
-        SequenceFileOutputFormat.setOutputPath(job, out);
-        job.setOutputFormatClass(SequenceFileOutputFormat.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
 
         TableMapReduceUtil.initTableMapperJob(
                 TableConfig.NEWS_TABLE_NAME,
@@ -114,6 +107,12 @@ public class PageContentSegmentor {
                 IntWritable.class,
                 job
         );
+
+        SequenceFileOutputFormat.setOutputPath(job, out);
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
 
         job.waitForCompletion(true);
     }
