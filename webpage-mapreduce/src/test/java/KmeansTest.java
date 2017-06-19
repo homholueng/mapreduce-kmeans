@@ -55,7 +55,7 @@ public class KmeansTest {
 
     @Test
     public void testStart() throws InterruptedException, IOException, ClassNotFoundException {
-        String vectorFilePath = "/cit/input";
+        String vectorFilePath = "/cit/input/doc";
         String centersFilePath = "/cit/output/part-r-00000";
         String outputDir = "/km/output";
         int totalIter = 3;

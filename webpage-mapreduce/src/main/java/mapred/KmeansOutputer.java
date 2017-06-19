@@ -121,7 +121,7 @@ public class KmeansOutputer {
 
         conf.set(Constants.VECTOR_SEPERATOR, "&");
         conf.set(Kmeans.CENTERS_PATH, centersFilePath);
-        Job job = Job.getInstance(conf);
+        Job job = Job.getInstance(conf, "KmeansOutputer");
         job.setJarByClass(KmeansOutputer.class);
         job.setMapperClass(KmeansOutputer.MyMapper.class);
         job.setReducerClass(KmeansOutputer.MyReducer.class);

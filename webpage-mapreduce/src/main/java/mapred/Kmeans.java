@@ -377,12 +377,12 @@ public class Kmeans {
     }
 
 
-    public static void runKmeansOnceWithConf(String vectorFilePath, String centersFilePath, String outputDir, Configuration conf) throws IOException, ClassNotFoundException, InterruptedException {
+    public static void runKmeansOnceWithConf(String vectorFilePath, String centersFilePath, String outputDir, Configuration conf, int curIter) throws IOException, ClassNotFoundException, InterruptedException {
         FileSystem fs = FileSystem.get(conf);
 
         conf.set(Constants.VECTOR_SEPERATOR, "&");
         conf.set(Kmeans.CENTERS_PATH, centersFilePath);
-        Job job = Job.getInstance(conf);
+        Job job = Job.getInstance(conf, "Kmeans-" + curIter);
         job.setJarByClass(Kmeans.class);
         job.setMapperClass(Kmeans.MyMapper.class);
         job.setReducerClass(Kmeans.MyReduce.class);
@@ -416,9 +416,9 @@ public class Kmeans {
         String dirPrefix = "/km/";
         for (int iter = 1; iter < totalIter; iter++) {
             newCentersDir = dirPrefix + iter;
-            runKmeansOnceWithConf(vectorFilePath, centersFilePath, newCentersDir, conf);
+            runKmeansOnceWithConf(vectorFilePath, centersFilePath, newCentersDir, conf, iter);
             centersFilePath = newCentersDir + "/part-r-00000";
         }
-        runKmeansOnceWithConf(vectorFilePath, centersFilePath, outputDir, conf);
+        runKmeansOnceWithConf(vectorFilePath, centersFilePath, outputDir, conf, totalIter);
     }
 }

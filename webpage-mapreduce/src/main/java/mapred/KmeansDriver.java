@@ -247,7 +247,7 @@ public class KmeansDriver {
         String outputDir = INITIAL_CENTERS_OUTPUT;
         configuration.get(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
         configuration.set(CentersInitializer.K, String.valueOf(K));
-        Job job = Job.getInstance(configuration);
+        Job job = Job.getInstance(configuration, "CentersInitializer");
         job.setJarByClass(CentersInitializer.class);
         job.setMapperClass(CentersInitializer.MyMapper.class);
         job.setReducerClass(CentersInitializer.MyReducer.class);
@@ -270,10 +270,9 @@ public class KmeansDriver {
         Kmeans.startWithConf(VECTOR_BUILDER_OUTPUT, CENTERS_FILE_PATH, FINAL_CENTERS_OUTPUT, TOTAL_ITER, configuration);
 
         //7
-        vectorFilePath = VECTOR_BUILDER_OUTPUT;
-        String centersFilePath = FINAL_CENTERS_FILE_PATH;
-        outputDir = "final/output";
-        KmeansOutputer.startWithConf(vectorFilePath, centersFilePath, outputDir, configuration);
+//        String centersFilePath = FINAL_CENTERS_FILE_PATH;
+//        outputDir = "final/output";
+//        KmeansOutputer.startWithConf(vectorFilePath, centersFilePath, outputDir, configuration);
 
 
         //8
