@@ -10,14 +10,19 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.lionsoul.jcseg.tokenizer.core.IWord;
 import util.SegmentorFactory;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,6 +38,9 @@ public class KmeansDriver {
     static final String IDS_CACHE_NAME = "ids.txt";
     static final String WORDS_CACHE_PATH = "/tmp/" + WORDS_CACHE_NAME;
     static final String IDS_CACHE_PATH = "/tmp/" + IDS_CACHE_NAME;
+
+    static final String RESULT_1_PATH = "kmeans-mapred1";
+    static final String RESULT_2_PATH = "kmeans-mapred2";
 
     public static void initProcessCache(Configuration configuration) throws IOException {
         Connection connection = ConnectionFactory.createConnection(configuration);
@@ -51,7 +59,7 @@ public class KmeansDriver {
         while ((row = scanner.next()) != null) {
             // add id to set
             ImmutableBytesWritable bytesWritable = new ImmutableBytesWritable(row.getRow());
-            ids.add(bytesWritable.toString().replaceAll(" ", ""));
+            ids.add(new String(bytesWritable.get()));
 
             // make segment on content
             byte[] bytes = row.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
@@ -96,9 +104,66 @@ public class KmeansDriver {
         Configuration configuration = HBaseConfiguration.create();
         initProcessCache(configuration);
 
+        // 1
+        Job job1 = Job.getInstance(configuration);
+        job1.setJarByClass(PageContentSegmentor.class);
+        job1.setMapperClass(PageContentSegmentor.MapClass.class);
+        job1.setReducerClass(PageContentSegmentor.Reduce.class);
+
         Scan scan = new Scan();
         scan.addFamily(Bytes.toBytes(CONTENT_FAMILY));
+        // good for map reduce job
         scan.setCaching(500);
         scan.setCacheBlocks(false);
+
+        Path out1 = new Path(RESULT_1_PATH);
+        FileSystem.get(configuration).delete(out1, true);
+
+        TableMapReduceUtil.initTableMapperJob(
+                TableConfig.NEWS_TABLE_NAME,
+                scan,
+                PageContentSegmentor.MapClass.class,
+                Text.class,
+                IntWritable.class,
+                job1
+        );
+
+        SequenceFileOutputFormat.setOutputPath(job1, out1);
+        job1.setOutputFormatClass(SequenceFileOutputFormat.class);
+        job1.setOutputKeyClass(Text.class);
+        job1.setOutputValueClass(IntWritable.class);
+
+
+        job1.waitForCompletion(true);
+
+        // 2
+        Configuration configuration2 = new Configuration();
+
+        Job job2 = Job.getInstance(configuration2);
+        job2.setJarByClass(WordPercentCounter.class);
+        job2.setMapperClass(WordPercentCounter.MapClass.class);
+        job2.setReducerClass(WordPercentCounter.Reduce.class);
+
+        Path in2 = new Path(RESULT_1_PATH);
+        Path out2 = new Path(RESULT_2_PATH);
+        FileSystem.get(configuration2).delete(out2,true);
+
+        SequenceFileInputFormat.addInputPath(job2, in2);
+        SequenceFileOutputFormat.setOutputPath(job2, out2);
+        job2.setInputFormatClass(SequenceFileInputFormat.class);
+        job2.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        job2.setMapOutputKeyClass(Text.class);
+        job2.setMapOutputValueClass(Text.class);
+        job2.setOutputKeyClass(Text.class);
+        job2.setOutputValueClass(DoubleWritable.class);
+
+        job2.waitForCompletion(true);
+
+        // 3
+
+        // 4
+
+        // ...
     }
 }
