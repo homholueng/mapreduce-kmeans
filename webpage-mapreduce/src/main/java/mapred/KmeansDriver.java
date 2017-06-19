@@ -47,6 +47,22 @@ public class KmeansDriver {
     static final String TFIDF_OUTPUT = "kmeans-mapred-tfidf-output";
     static final String VECTOR_BUILDER_OUTPUT = "kmeans-mapred-vector-builder-output";
 
+
+    //5
+    static final int K = 10;
+    static final String INITIAL_CENTERS_OUTPUT = "/cit/output";
+
+    //6
+    static final String CENTERS_FILE_PATH = INITIAL_CENTERS_OUTPUT + "/part-r-00000";
+    static final String FINAL_CENTERS_OUTPUT = "/km/output";
+    static final int TOTAL_ITER = 5;
+
+    //7
+    static final String FINAL_CENTERS_FILE_PATH = FINAL_CENTERS_OUTPUT + "/part-r-00000";
+    static final String FINAL_OUTPUT = "/final/output";
+
+
+
     public static void initProcessCache(Configuration configuration) throws IOException {
         Connection connection = ConnectionFactory.createConnection(configuration);
         Table table = connection.getTable(TableName.valueOf(NEWS_TABLE_NAME));
@@ -228,6 +244,22 @@ public class KmeansDriver {
         FileOutputFormat.setOutputPath(job4, new Path(VECTOR_BUILDER_OUTPUT));
 
         job4.waitForCompletion(true);
-        // ...
+
+        //5
+        CentersInitializer.start(VECTOR_BUILDER_OUTPUT, INITIAL_CENTERS_OUTPUT, K);
+
+        //6
+        Kmeans.start(VECTOR_BUILDER_OUTPUT, CENTERS_FILE_PATH, FINAL_CENTERS_OUTPUT, TOTAL_ITER);
+
+        //7
+        String vectorFilePath = "/km/input";
+        String centersFilePath = "/km/output/part-r-00000";
+        String outputDir = "/final/output";
+        KmeansOutputer.start(vectorFilePath, centersFilePath, outputDir);
+
+
+        //8
+        KmeansOutputer.start(VECTOR_BUILDER_OUTPUT, FINAL_CENTERS_FILE_PATH, FINAL_OUTPUT);
+
     }
 }

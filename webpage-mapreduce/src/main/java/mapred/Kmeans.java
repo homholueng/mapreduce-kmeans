@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 import java.io.IOException;
@@ -76,6 +77,7 @@ public class Kmeans {
         while (reader.next(centerID, value)) {
             double[] vector = convert(value.toString());
             centers.put(centerID.toString(), vector);
+            System.out.println(centerID.toString() + ": " + vector);
         }
     }
 
@@ -311,11 +313,11 @@ public class Kmeans {
         job.setOutputValueClass(Text.class);
 
 
-        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
-        job.setInputFormatClass(KeyValueTextInputFormat.class);
+//        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+//        job.setInputFormatClass(KeyValueTextInputFormat.class);
 
-//        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
-//        job.setInputFormatClass(SequenceFileInputFormat.class);
+        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(SequenceFileInputFormat.class);
 
         SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
         job.setOutputFormatClass(SequenceFileOutputFormat.class);

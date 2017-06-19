@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapreduce.lib.fieldsel.FieldSelectionHelper;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 import java.io.*;
@@ -112,8 +113,9 @@ public class CentersInitializer {
      */
     public static void start(String vectorFilePath, String outputDir, int k) throws InterruptedException, IOException, ClassNotFoundException {
         Configuration conf = HBaseConfiguration.create();
-        KmeansDriver.initProcessCache(conf);
 
+
+        conf.get(Constants.IDS_FILE_PATH_NAME, KmeansDriver.IDS_CACHE_PATH);
         conf.set(CentersInitializer.K, String.valueOf(k));
         Job job = Job.getInstance(conf);
         job.setJarByClass(CentersInitializer.class);
@@ -122,15 +124,12 @@ public class CentersInitializer {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 
-//        FileInputFormat.addInputPath(job, new Path("/cit/input/doc"));
-//        FileOutputFormat.setOutputPath(job, new Path("/cit/output"));
-//        TextInputFormat.addInputPath(job, new Path("/cit/input/doc"));
-//        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
-        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+//        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
+        SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
+        job.setInputFormatClass(SequenceFileInputFormat.class);
+
 //        TextOutputFormat.setOutputPath(job, new Path("/cit/output"));
         SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
-
-        job.setInputFormatClass(KeyValueTextInputFormat.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
         FileSystem fs = FileSystem.get(conf);
