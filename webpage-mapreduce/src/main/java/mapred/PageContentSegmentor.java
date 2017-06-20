@@ -17,12 +17,12 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.lionsoul.jcseg.tokenizer.core.IWord;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import util.SegmentorFactory;
 
 import java.io.IOException;
 
-import static hbase.config.TableConfig.CONTENT_FAMILY;
-import static hbase.config.TableConfig.CONTENT_QUALIFIER;
+import static hbase.config.TableConfig.*;
 import static mapred.config.Constants.SEPERATOR;
 import static util.SegmentorFactory.Segmentor;
 
@@ -33,18 +33,11 @@ public class PageContentSegmentor {
 
     public static class MapClass extends TableMapper<Text, IntWritable> {
 
-        Segmentor seg;
+//        Segmentor seg;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            this.seg = SegmentorFactory.newInstance();
-//            FileSystem fileSystem = FileSystem.get(context.getConfiguration());
-//            Path path = new Path(context.getConfiguration().get(Constants.IDS_FILE_PATH_NAME));
-//            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(path)));
-//            String id = "";
-//            while ((id = reader.readLine()) != null) {
-//                System.out.println(id);
-//            }
+//            this.seg = SegmentorFactory.newInstance();
         }
 
         // input: 网页编号->网页内容
@@ -55,13 +48,13 @@ public class PageContentSegmentor {
             byte[] bytes = value.getValue(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER));
             String content = new String(bytes);
 
+            Segmentor seg = SegmentorFactory.newInstance();
             seg.reset(content);
             IWord word = null;
             while ((word = seg.next()) != null) {
                 String val = word.getValue();
                 StringBuilder keyBuilder = new StringBuilder(val.length() + SEPERATOR.length() + id.length());
                 Text keyout = new Text(keyBuilder.append(val).append(SEPERATOR).append(id).toString());
-//                System.out.println(keyout + ": " + val);
                 context.write(keyout,
                         new IntWritable(1));
             }
@@ -109,6 +102,7 @@ public class PageContentSegmentor {
         );
 
         SequenceFileOutputFormat.setOutputPath(job, out);
+
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
