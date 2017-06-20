@@ -50,12 +50,12 @@ public class KmeansDriver {
     static final String INITIAL_CENTERS_OUTPUT = "/cit/output";
 
     //6
-    static final String CENTERS_FILE_PATH = INITIAL_CENTERS_OUTPUT + "/part-r-00000";
+    static final String CENTERS_FILE_PATH = INITIAL_CENTERS_OUTPUT;
     static final String FINAL_CENTERS_OUTPUT = "/km/output";
     static final int TOTAL_ITER = 5;
 
     //7
-    static final String FINAL_CENTERS_FILE_PATH = FINAL_CENTERS_OUTPUT + "/part-r-00000";
+    static final String FINAL_CENTERS_FILE_PATH = FINAL_CENTERS_OUTPUT;
     static final String FINAL_OUTPUT = "/final/output";
 
 

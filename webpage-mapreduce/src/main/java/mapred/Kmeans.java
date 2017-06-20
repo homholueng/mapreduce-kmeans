@@ -2,6 +2,7 @@ package mapred;
 
 import mapred.config.Constants;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -75,12 +76,19 @@ public class Kmeans {
         Configuration conf = context.getConfiguration();
         Path centersPath = new Path(conf.get(CENTERS_PATH));
         FileSystem fs = FileSystem.get(conf);
-        SequenceFile.Reader reader = new SequenceFile.Reader(fs, centersPath, conf);
-        Text centerID = new Text();
-        Text value = new Text();
-        while (reader.next(centerID, value)) {
-            double[] vector = convert(value.toString());
-            centers.put(centerID.toString(), vector);
+
+        FileStatus[] stats = fs.listStatus(centersPath);
+        for (int i = 0; i < stats.length; i++) {
+            FileStatus stat = stats[i];
+            if (stat.isFile() && !stat.getPath().toString().contains("SUCCESS")) {
+                SequenceFile.Reader reader = new SequenceFile.Reader(fs, stat.getPath(), conf);
+                Text centerID = new Text();
+                Text value = new Text();
+                while (reader.next(centerID, value)) {
+                    double[] vector = convert(value.toString());
+                    centers.put(centerID.toString(), vector);
+                }
+            }
         }
 //        printCenters(centers);
     }
@@ -411,13 +419,14 @@ public class Kmeans {
     }
 
     public static void startWithConf(String vectorFilePath, String centersFilePath, String outputDir, int totalIter,
-        Configuration conf) throws InterruptedException, IOException, ClassNotFoundException {
+                                     Configuration conf) throws InterruptedException, IOException, ClassNotFoundException {
         String newCentersDir = null;
         String dirPrefix = "/km/";
         for (int iter = 1; iter < totalIter; iter++) {
             newCentersDir = dirPrefix + iter;
             runKmeansOnceWithConf(vectorFilePath, centersFilePath, newCentersDir, conf, iter);
-            centersFilePath = newCentersDir + "/part-r-00000";
+//            centersFilePath = newCentersDir + "/part-r-00000";
+            centersFilePath = newCentersDir;
         }
         runKmeansOnceWithConf(vectorFilePath, centersFilePath, outputDir, conf, totalIter);
     }
