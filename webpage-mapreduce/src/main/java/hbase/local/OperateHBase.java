@@ -21,21 +21,30 @@ import static hbase.config.TableConfig.*;
  */
 
 
-public class PutTestData {
+public class OperateHBase {
 
-    public static void main(String[] args) throws IOException, DeserializationException {
-        Configuration conf = HBaseConfiguration.create();
-        Connection connection = ConnectionFactory.createConnection(conf);
+    public static void printRow(Connection connection, String rowKey) throws IOException {
+        Table table = connection.getTable(TableName.valueOf(NEWS_TABLE_NAME));
+        Get get = new Get(Bytes.toBytes("582ef36d-b0b3-4c0c-bf64-5ea6c062e436"));
+        Result result = table.get(get);
+        System.out.println(new String(result.getValue(Bytes.toBytes(CONTENT_FAMILY),
+                Bytes.toBytes(CONTENT_QUALIFIER))));
+        table.close();
+    }
+
+    public static void putData(Connection connection) throws IOException {
         Admin admin = connection.getAdmin();
 
         TableName tableName = TableName.valueOf(NEWS_TABLE_NAME);
 
-        if (!admin.tableExists(tableName)) {
-            HTableDescriptor newTable = new HTableDescriptor(TableName.valueOf("news-7"));
-            newTable.addFamily(new HColumnDescriptor(CONTENT_FAMILY));
-            newTable.addFamily(new HColumnDescriptor(META_FAMILY));
-            admin.createTable(newTable);
-        }
+        admin.disableTable(tableName);
+        admin.deleteTable(tableName);
+
+        HTableDescriptor newTable = new HTableDescriptor(tableName);
+        newTable.addFamily(new HColumnDescriptor(CONTENT_FAMILY));
+        newTable.addFamily(new HColumnDescriptor(META_FAMILY));
+        admin.createTable(newTable);
+
         Table table = connection.getTable(tableName);
 
         File file = new File("src/main/resources/store3.txt");
@@ -45,7 +54,7 @@ public class PutTestData {
         int count = 0;
         while ((line = reader.readLine()) != null) {
             System.out.println(++count);
-            String [] fields = line.split("\t");
+            String[] fields = line.split("\t");
 
             Put news = new Put(Bytes.toBytes(UUID.randomUUID().toString()));
             news.addColumn(Bytes.toBytes(CONTENT_FAMILY), Bytes.toBytes(CONTENT_QUALIFIER),
@@ -56,13 +65,19 @@ public class PutTestData {
                     Bytes.toBytes(fields[1]));
             news.addColumn(Bytes.toBytes(META_FAMILY), Bytes.toBytes(SUB_TYPE_QUALIFIER),
                     Bytes.toBytes(""));
-//            news.addColumn(Bytes.toBytes(META_FAMILY), Bytes.toBytes(URL_QUALIFIER),
-//                    Bytes.toBytes(fields[3]));
+            news.addColumn(Bytes.toBytes(META_FAMILY), Bytes.toBytes(URL_QUALIFIER),
+                    Bytes.toBytes(fields[3]));
 
             table.put(news);
         }
 
         table.close();
+    }
+
+    public static void main(String[] args) throws IOException, DeserializationException {
+        Configuration conf = HBaseConfiguration.create();
+        Connection connection = ConnectionFactory.createConnection(conf);
+        putData(connection);
         connection.close();
     }
 }

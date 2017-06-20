@@ -390,17 +390,11 @@ public class Kmeans {
         job.setOutputValueClass(Text.class);
 
 
-//        KeyValueTextInputFormat.addInputPath(job, new Path(vectorFilePath));
-//        job.setInputFormatClass(KeyValueTextInputFormat.class);
-
         SequenceFileInputFormat.addInputPath(job, new Path(vectorFilePath));
         job.setInputFormatClass(SequenceFileInputFormat.class);
 
         SequenceFileOutputFormat.setOutputPath(job, new Path(outputDir));
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
-
-
-//        TextOutputFormat.setOutputPath(job, new Path(outputDir));
 
 
         if (fs.exists(new Path(outputDir))) {

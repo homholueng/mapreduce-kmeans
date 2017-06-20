@@ -116,5 +116,7 @@
     <orderEntry type="library" scope="RUNTIME" name="Maven: commons-el:commons-el:1.0" level="project" />
     <orderEntry type="library" name="Maven: org.jamon:jamon-runtime:2.4.1" level="project" />
     <orderEntry type="library" name="Maven: com.lmax:disruptor:3.3.0" level="project" />
+    <orderEntry type="library" name="Maven: org.mybatis:mybatis:3.4.1" level="project" />
+    <orderEntry type="library" name="Maven: mysql:mysql-connector-java:5.1.6" level="project" />
   </component>
 </module>

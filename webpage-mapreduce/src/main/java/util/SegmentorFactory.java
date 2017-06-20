@@ -1,6 +1,9 @@
 package util;
 
+import mapred.config.Constants;
+import org.apache.commons.lang.StringUtils;
 import org.lionsoul.jcseg.tokenizer.core.*;
+import org.mortbay.util.StringUtil;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -42,7 +45,9 @@ public class SegmentorFactory {
             IWord word = null;
             while ((word = seg.next()) != null) {
                 int t = word.getType();
-                if (t == 1 || t == 2 || t == 5) {
+                if ((t == 1 || t == 2 || t == 5)
+                        && !word.getValue().contains(Constants.SEPERATOR)
+                        && !StringUtils.isNumeric(word.getValue())) {
                     break;
                 }
             }
